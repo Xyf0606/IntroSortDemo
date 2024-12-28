@@ -1,98 +1,91 @@
-#include <cstdlib>
 #include <iostream>
+#include <cstdlib>
+#include <vector>
+#include <cmath>
 #include <algorithm>
 
-class Sort
-{
+class Sort {
+protected:
+    std::vector<int> data;
+
 public:
-    Sort(int* a, int n) : data(a), size(n), front(0), back(n - 1) {}
+    Sort(int arr[], int n) : data(arr, arr + n) {}
 
-    ~Sort() = default;
-
-    void sort()
-    {
-        quickSort(front, back);
+    virtual void sort() {
+        introsort(data.begin(), data.end(), 2 * log2(data.size()));
     }
 
-    int get(int i) const
-    {
-        if (data) {
-            return data[i];
-        } else {
-            return -1;
+    int get(int index) const {
+        if(index >=0 && index < data.size()) {
+            return data.at(index);
         }
+        throw std::out_of_range("Index out of range");
     }
+
+    virtual ~Sort() = default;
 
 private:
-    int partition(int front, int back)
-    {
-        int pivot = data[back], index = front - 1;
+    template <typename RandomIt>
+    void introsort(RandomIt first, RandomIt last, int depth_limit) {
+        if (last - first <= 16) {
+            insertion_sort(first, last); // 小区间使用插入排序
+            return;
+        }
+        if (depth_limit == 0) {
+            heapsort(first, last); // 超过递归深度限制时使用堆排序
+            return;
+        }
+        RandomIt pivot = partition(first, last); // 快速排序的分区操作
+        introsort(first, pivot, depth_limit - 1); // 递归排序左半部分
+        introsort(pivot + 1, last, depth_limit - 1); // 递归排序右半部分
+    }
 
-        for (size_t i = front; i <= back - 1; i++) {
-            if (data[i] < pivot) {
-                index++;
-                std::swap(data[index], data[i]);
+    // 插入排序实现
+    template <typename RandomIt>
+    void insertion_sort(RandomIt first, RandomIt last) {
+        for (RandomIt i = first + 1; i < last; ++i) {
+            auto key = *i;
+            RandomIt j = i - 1;
+            while (j >= first && *j > key) {
+                *(j + 1) = *j;
+                --j;
             }
-        }
-        std::swap(data[index + 1], data[back]);
-
-        return (index + 1);
-    }
-
-    void quickSort(int front, int back)
-    {
-        if (front < back) {
-            int pi = partition(front, back);
-
-            quickSort(front, pi - 1);
-            quickSort(pi + 1, back);
+            *(j + 1) = key;
         }
     }
 
-protected:
-    int *data;
-    int size, front, back;
+    // 堆排序实现
+    template <typename RandomIt>
+    void heapsort(RandomIt first, RandomIt last) {
+        std::make_heap(first, last);
+        std::sort_heap(first, last);
+    }
+
+    // 快速排序分区操作
+    template <typename RandomIt>
+    RandomIt partition(RandomIt first, RandomIt last) {
+        auto pivot = *(first + (last - first) / 2); // 选取中间元素为枢轴
+        RandomIt i = first - 1;
+        RandomIt j = last;
+        while (true) {
+            do { ++i; } while (*i < pivot);
+            do { --j; } while (*j > pivot);
+            if (i >= j) return j;
+            std::iter_swap(i, j);
+        }
+    }
+
 };
 
-class ExSort : public Sort
-{
+class ExSort : public Sort {
 public:
-    ExSort(int a[], int n) : Sort(a, n) {}
+    ExSort(int arr[], int n) : Sort(arr, n) {}
 
-    ~ExSort() = default;
-
-    void exsort(int order)
-    {
+    void exsort(int order) {
         if (order == 1) {
-            quickSortReverse(front, back);
+            std::sort(data.begin(), data.end(), std::greater<int>()); // 降序排序
         } else {
-            this->sort();
-        }
-    }
-
-private:
-    int partitionReverse(int front, int back)
-    {
-        int pivot = data[back], index = front - 1;
-
-        for (size_t i = front; i <= back - 1; i++) {
-            if (data[i] > pivot) {
-                index++;
-                std::swap(data[index], data[i]);
-            }
-        }
-        std::swap(data[index + 1], data[back]);
-
-        return (index + 1);
-    }
-
-    void quickSortReverse(int front, int back)
-    {
-        if (front < back) {
-            int pi = partitionReverse(front, back);
-
-            quickSortReverse(front, pi - 1);
-            quickSortReverse(pi + 1, back);
+            std::sort(data.begin(), data.end()); // 升序排序
         }
     }
 };
