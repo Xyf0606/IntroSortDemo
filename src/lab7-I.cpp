@@ -27,17 +27,23 @@ public:
 private:
     template <typename RandomIt>
     void introsort(RandomIt first, RandomIt last, int depth_limit) {
-        if (last - first <= 16) {
-            insertion_sort(first, last); // 小区间使用插入排序
-            return;
+        while (last - first > 16) {
+            if (depth_limit == 0) {
+                heapsort(first, last); // 超过递归深度限制时使用堆排序
+                return;
+            }
+            --depth_limit;
+            RandomIt pivot = median_of_three(first, first + (last - first) / 2, last - 1);
+            pivot = partition(first, last, *pivot);
+            if (pivot - first < last - pivot) { // 优先排序较小的区间
+                introsort(first, pivot, depth_limit);
+                first = pivot + 1;
+            } else {
+                introsort(pivot + 1, last, depth_limit);
+                last = pivot;
+            }
         }
-        if (depth_limit == 0) {
-            heapsort(first, last); // 超过递归深度限制时使用堆排序
-            return;
-        }
-        RandomIt pivot = partition(first, last); // 快速排序的分区操作
-        introsort(first, pivot, depth_limit - 1); // 递归排序左半部分
-        introsort(pivot + 1, last, depth_limit - 1); // 递归排序右半部分
+        insertion_sort(first, last); // 小区间使用插入排序
     }
 
     // 插入排序实现
@@ -45,12 +51,9 @@ private:
     void insertion_sort(RandomIt first, RandomIt last) {
         for (RandomIt i = first + 1; i < last; ++i) {
             auto key = *i;
-            RandomIt j = i - 1;
-            while (j >= first && *j > key) {
-                *(j + 1) = *j;
-                --j;
-            }
-            *(j + 1) = key;
+            RandomIt pos = std::upper_bound(first, i, key);
+            std::move_backward(pos, i, i + 1);
+            *pos = key;
         }
     }
 
@@ -62,16 +65,31 @@ private:
     }
 
     // 快速排序分区操作
-    template <typename RandomIt>
-    RandomIt partition(RandomIt first, RandomIt last) {
-        auto pivot = *(first + (last - first) / 2); // 选取中间元素为枢轴
-        RandomIt i = first - 1;
-        RandomIt j = last;
+    template <typename RandomIt, typename T>
+    RandomIt partition(RandomIt first, RandomIt last, T pivot) {
+        RandomIt left = first;
+        RandomIt right = last - 1;
         while (true) {
-            do { ++i; } while (*i < pivot);
-            do { --j; } while (*j > pivot);
-            if (i >= j) return j;
-            std::iter_swap(i, j);
+            while (*left < pivot) ++left;
+            while (*right > pivot) --right;
+            if (left >= right) return right;
+            std::iter_swap(left, right);
+            ++left;
+            --right;
+        }
+    }
+
+    // 三点中值法选择枢轴
+    template <typename RandomIt>
+    RandomIt median_of_three(RandomIt a, RandomIt b, RandomIt c) {
+        if (*a < *b) {
+            if (*b < *c) return b;
+            else if (*a < *c) return c;
+            else return a;
+        } else {
+            if (*a < *c) return a;
+            else if (*b < *c) return c;
+            else return b;
         }
     }
 
@@ -81,11 +99,13 @@ class ExSort : public Sort {
 public:
     ExSort(int arr[], int n) : Sort(arr, n) {}
 
+    virtual ~ExSort() = default;
+
     void exsort(int order) {
         if (order == 1) {
             std::sort(data.begin(), data.end(), std::greater<int>()); // 降序排序
         } else {
-            std::sort(data.begin(), data.end()); // 升序排序
+            sort(); // 升序排序
         }
     }
 };
