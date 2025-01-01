@@ -57,23 +57,50 @@ protected:
     {
         for (RandomIt i = first + 1; i < last; ++i) {
             auto key = *i;
-            RandomIt pos = reverse ? std::upper_bound(first, i, key, std::greater<int>())
-                                   : std::upper_bound(first, i, key);
-            std::move_backward(pos, i, i + 1);
+            RandomIt pos = i;
+            while (pos > first && (reverse ? *(pos - 1) < key : *(pos - 1) > key)) {
+                *pos = *(pos - 1);
+                --pos;
+            }
             *pos = key;
         }
     }
 
     // 堆排序实现
     template <typename RandomIt>
+    void heapify(RandomIt first, RandomIt last, RandomIt root, bool reverse)
+    {
+        auto cmp =
+            reverse ? [](int a, int b) { return a < b; } : [](int a, int b) { return a > b; };
+        while (true) {
+            RandomIt largest = root;
+            RandomIt left = first + 2 * (root - first) + 1;
+            RandomIt right = first + 2 * (root - first) + 2;
+
+            if (left < last && cmp(*largest, *left)) {
+                largest = left;
+            }
+            if (right < last && cmp(*largest, *right)) {
+                largest = right;
+            }
+            if (largest != root) {
+                std::swap(*root, *largest);
+                root = largest;
+            } else {
+                break;
+            }
+        }
+    }
+
+    template <typename RandomIt>
     void heapsort(RandomIt first, RandomIt last, bool reverse)
     {
-        if (reverse) {
-            std::make_heap(first, last, std::less<int>());
-            std::sort_heap(first, last, std::less<int>());
-        } else {
-            std::make_heap(first, last, std::greater<int>());
-            std::sort_heap(first, last, std::greater<int>());
+        for (RandomIt i = first + (last - first) / 2 - 1; i >= first; --i) {
+            heapify(first, last, i, reverse);
+        }
+        for (RandomIt i = last - 1; i > first; --i) {
+            std::swap(*first, *i);
+            heapify(first, i, first, reverse);
         }
     }
 
@@ -92,7 +119,7 @@ protected:
                 while (*right > pivot) --right;
             }
             if (left >= right) return right;
-            std::iter_swap(left, right);
+            std::swap(*left, *right);
             ++left;
             --right;
         }
