@@ -15,8 +15,6 @@ BraceWrapping:
   AfterUnion: false
   BeforeCatch: true
   IndentBraces: false
-  EmptyBlock: SameLine
-  AfterControlStatementEmptyBody: false
 SpaceAfterCStyleCast: true
 PointerAlignment: Right
 CompactNamespaces: true
